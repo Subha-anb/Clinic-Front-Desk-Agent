@@ -1,0 +1,78 @@
+{
+  "name": "Sunrise Family Clinic",
+  "timezone": "Asia/Kolkata",
+  "phone": "+91 44 4000 1234",
+  "address": "12 Lake View Road, Adyar, Chennai 600020",
+  "hours": "Monday to Saturday, 9:00 AM to 8:00 PM. Closed on Sundays and public holidays.",
+  "emergency": {
+    "general": "112",
+    "ambulance": "108",
+    "mental_health": "Tele-MANAS 14416"
+  },
+  "staff_response_time": "within 2 hours during clinic hours",
+  "review_url": "https://g.page/r/sunrise-family-clinic/review",
+  "doctors": [
+    {
+      "id": "dr-rao",
+      "name": "Dr. Anita Rao",
+      "specialty": "General Physician",
+      "slot_minutes": 15,
+      "schedule": {
+        "mon": ["09:00-13:00", "17:00-20:00"],
+        "tue": ["09:00-13:00", "17:00-20:00"],
+        "wed": ["09:00-13:00"],
+        "thu": ["09:00-13:00", "17:00-20:00"],
+        "fri": ["09:00-13:00", "17:00-20:00"],
+        "sat": ["09:00-13:00"]
+      }
+    },
+    {
+      "id": "dr-iyer",
+      "name": "Dr. Karthik Iyer",
+      "specialty": "Paediatrics (children)",
+      "slot_minutes": 20,
+      "schedule": {
+        "tue": ["10:00-13:00"],
+        "thu": ["10:00-13:00"],
+        "sat": ["09:00-12:00"]
+      }
+    },
+    {
+      "id": "dr-mehta",
+      "name": "Dr. Sameer Mehta",
+      "specialty": "Diabetes & Endocrinology",
+      "slot_minutes": 20,
+      "schedule": {
+        "mon": ["17:00-20:00"],
+        "wed": ["17:00-20:00"],
+        "fri": ["10:00-13:00"]
+      }
+    },
+    {
+      "id": "lab",
+      "name": "Diagnostic Lab (blood and urine tests)",
+      "specialty": "Laboratory",
+      "slot_minutes": 10,
+      "schedule": {
+        "mon": ["07:30-11:00"],
+        "tue": ["07:30-11:00"],
+        "wed": ["07:30-11:00"],
+        "thu": ["07:30-11:00"],
+        "fri": ["07:30-11:00"],
+        "sat": ["07:30-11:00"]
+      }
+    },
+    {
+      "id": "imaging",
+      "name": "Imaging (Ultrasound and X-ray)",
+      "specialty": "Imaging",
+      "slot_minutes": 20,
+      "schedule": {
+        "mon": ["10:00-16:00"],
+        "wed": ["10:00-16:00"],
+        "fri": ["10:00-16:00"],
+        "sat": ["10:00-13:00"]
+      }
+    }
+  ]
+}

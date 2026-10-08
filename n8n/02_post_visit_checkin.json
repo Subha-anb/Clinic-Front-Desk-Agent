@@ -1,0 +1,154 @@
+{
+  "name": "Clinic - Post-visit check-in",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 11 * * *"
+            }
+          ]
+        }
+      },
+      "id": "88dc86ae-3df1-517a-bced-8d412425dfb4",
+      "name": "Every day at 11 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CLINIC_API_URL }}/internal/followups/due",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "kind",
+              "value": "checkin"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "36542c1d-d5c4-5e84-81dd-23061ac20e62",
+      "name": "Get due patients",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Clinic internal API (Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "e269af06-95c2-53bf-9761-a3dda0e0b946",
+      "name": "One item per appointment",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLINIC_API_URL }}/internal/followups/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ appointment_id: $json.appointment_id, kind: $json.kind }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "1a9f772a-316b-5e50-96f0-cf0cd890fa13",
+      "name": "Send WhatsApp template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Clinic internal API (Bearer)"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Every day at 11 AM": {
+      "main": [
+        [
+          {
+            "node": "Get due patients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get due patients": {
+      "main": [
+        [
+          {
+            "node": "One item per appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per appointment": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "saveDataSuccessExecution": "none"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "The app decides who is due (opt-outs, duplicates, open clinical tickets). n8n never sees phone numbers or message content."
+  }
+}
