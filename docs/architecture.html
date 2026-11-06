@@ -1,0 +1,417 @@
+<title>Clinic Front Desk Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column of figures, each diagram in its own scroll box; tables for the facts. */
+:root {
+  --bg: #f3f6f6;
+  --surface: #ffffff;
+  --fg: #12222a;
+  --muted: #5a6b72;
+  --line: #c9d4d6;
+  --edge: #48606a;
+  --accent: #0b6b6f;          /* guardrail layers */
+  --accent-soft: #e2f1f1;
+  --danger: #b3261e;          /* escalate / emergency */
+  --danger-soft: #fbe9e7;
+  --ok: #2c6e3a;              /* answered / booked */
+  --ok-soft: #e6f2e7;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --sans: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e171b; --surface: #15232a; --fg: #e3ecee; --muted: #93a6ad; --line: #2c3f47; --edge: #9db2b9;
+    --accent: #5cc4c4; --accent-soft: #123236; --danger: #f08a80; --danger-soft: #3a1c1a; --ok: #8fd19a; --ok-soft: #173020;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e171b; --surface: #15232a; --fg: #e3ecee; --muted: #93a6ad; --line: #2c3f47; --edge: #9db2b9;
+  --accent: #5cc4c4; --accent-soft: #123236; --danger: #f08a80; --danger-soft: #3a1c1a; --ok: #8fd19a; --ok-soft: #173020;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px; display: grid; gap: 56px; }
+header { display: grid; gap: 12px; max-width: 70ch; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(30px, 5vw, 46px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 24px/1.2 var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 18px; }
+section { display: grid; gap: 16px; }
+figure { margin: 0; display: grid; gap: 12px; }
+.canvas { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.canvas svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--edge); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 75ch; }
+code, .path { font-family: var(--mono); font-size: .86em; }
+
+/* SVG vocabulary */
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.frame { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 6 5; }
+.guard { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+.danger { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.4; }
+.ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.4; }
+.ext { fill: var(--bg); stroke: var(--edge); stroke-width: 1.2; }
+.t { fill: var(--fg); font: 600 13px var(--sans); }
+.s { fill: var(--muted); font: 400 11px var(--mono); }
+.lbl { fill: var(--muted); font: 500 11px var(--sans); }
+.frame-lbl { fill: var(--muted); font: 600 11px var(--mono); letter-spacing: .06em; }
+.edge { stroke: var(--edge); stroke-width: 1.4; fill: none; }
+.edge-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+.edge-fail { stroke: var(--danger); stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+.dot { fill: var(--accent); }
+.axis { stroke: var(--line); stroke-width: 2; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid; }
+.sw.g { background: var(--accent-soft); border-color: var(--accent); }
+.sw.d { background: var(--danger-soft); border-color: var(--danger); }
+.sw.o { background: var(--ok-soft); border-color: var(--ok); }
+
+.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; max-width: 75ch; }
+.steps li::marker { font: 600 14px var(--mono); color: var(--accent); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 620px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+.no { color: var(--ok); font-weight: 600; }
+.yes { color: var(--danger); font-weight: 600; }
+.part { color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Capstone project 2 · Healthcare</div>
+    <h1>Clinic Front Desk Agent architecture</h1>
+    <p class="lede">A WhatsApp assistant that handles logistics for a small clinic and sends anything clinical to staff. This page shows how a message moves through the system, where the guardrails sit, and who can see patient data.</p>
+    <div class="legend" aria-label="Colour key">
+      <span><i class="sw g"></i>Guardrail layer</span>
+      <span><i class="sw d"></i>Sent to staff or emergency</span>
+      <span><i class="sw o"></i>Handled by the assistant</span>
+    </div>
+  </header>
+
+  <!-- 1. System overview -->
+  <section>
+    <h2>System overview</h2>
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 1040 660" role="img" aria-label="System overview: WhatsApp messages reach a FastAPI service whose agent checks guardrails, calls Claude with redacted text, retrieves clinic documents, and books through a tool gateway and MCP server backed by Google Calendar and Sheets. n8n schedules follow-ups through the internal API and emails staff when a ticket is opened.">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+
+          <!-- Service boundary -->
+          <rect class="frame" x="200" y="110" width="550" height="420" rx="12"/>
+          <text class="frame-lbl" x="216" y="134">FASTAPI SERVICE · app/</text>
+
+          <!-- External: patient + Meta -->
+          <rect class="ext" x="20" y="150" width="130" height="60" rx="8"/>
+          <text class="t" x="85" y="176" text-anchor="middle">Patient</text>
+          <text class="s" x="85" y="195" text-anchor="middle">WhatsApp</text>
+          <rect class="ext" x="20" y="300" width="130" height="60" rx="8"/>
+          <text class="t" x="85" y="326" text-anchor="middle">Meta Cloud API</text>
+          <text class="s" x="85" y="345" text-anchor="middle">WhatsApp</text>
+          <line class="edge" x1="85" y1="212" x2="85" y2="298" marker-start="url(#a1)" marker-end="url(#a1)"/>
+          <text class="lbl" x="93" y="259">chat</text>
+
+          <!-- Webhook -->
+          <rect class="box" x="230" y="300" width="130" height="60" rx="8"/>
+          <text class="t" x="295" y="326" text-anchor="middle">Webhook</text>
+          <text class="s" x="295" y="345" text-anchor="middle">HMAC · dedupe</text>
+          <line class="edge" x1="150" y1="318" x2="228" y2="318" marker-end="url(#a1)"/>
+          <text class="lbl" x="190" y="311" text-anchor="middle">POST</text>
+          <line class="edge" x1="228" y1="342" x2="152" y2="342" marker-end="url(#a1)"/>
+          <text class="lbl" x="190" y="357" text-anchor="middle">reply</text>
+
+          <!-- Agent -->
+          <rect class="box" x="400" y="300" width="150" height="60" rx="8"/>
+          <text class="t" x="475" y="326" text-anchor="middle">FrontDeskAgent</text>
+          <text class="s" x="475" y="345" text-anchor="middle">app/agent.py</text>
+          <line class="edge" x1="360" y1="330" x2="398" y2="330" marker-end="url(#a1)"/>
+
+          <!-- Guardrails -->
+          <rect class="guard" x="400" y="160" width="110" height="90" rx="8"/>
+          <text class="t" x="455" y="182" text-anchor="middle">Guardrails</text>
+          <text class="s" x="412" y="203">1 rules</text>
+          <text class="s" x="412" y="220">2 classifier</text>
+          <text class="s" x="412" y="237">3 output guard</text>
+          <line class="edge-accent" x1="455" y1="298" x2="455" y2="252" marker-start="url(#a1)" marker-end="url(#a1)" style="color:var(--accent)"/>
+          <text class="lbl" x="462" y="280">verdict</text>
+
+          <!-- Claude -->
+          <rect class="ext" x="400" y="20" width="160" height="56" rx="8"/>
+          <text class="t" x="480" y="44" text-anchor="middle">Claude API</text>
+          <text class="s" x="480" y="62" text-anchor="middle">claude-opus-5-5</text>
+          <line class="edge" x1="440" y1="158" x2="440" y2="78" marker-end="url(#a1)"/>
+          <text class="lbl" x="447" y="100">classify</text>
+          <line class="edge" x1="535" y1="298" x2="535" y2="78" marker-end="url(#a1)"/>
+          <text class="lbl" x="543" y="100">answer · book</text>
+          <text class="lbl" x="543" y="114">redacted text only</text>
+
+          <!-- RAG -->
+          <rect class="box" x="590" y="160" width="140" height="60" rx="8"/>
+          <text class="t" x="660" y="186" text-anchor="middle">Knowledge base</text>
+          <text class="s" x="660" y="205" text-anchor="middle">BM25 · knowledge/</text>
+          <path class="edge" d="M550,312 H570 V190 H588" marker-end="url(#a1)"/>
+          <text class="lbl" x="577" y="258">retrieve</text>
+
+          <!-- Tool gateway -->
+          <rect class="guard" x="590" y="300" width="140" height="60" rx="8"/>
+          <text class="t" x="660" y="326" text-anchor="middle">Tool gateway</text>
+          <text class="s" x="660" y="345" text-anchor="middle">allowlist+identity</text>
+          <line class="edge" x1="550" y1="345" x2="588" y2="345" marker-end="url(#a1)"/>
+
+          <!-- MCP + stores -->
+          <rect class="box" x="790" y="300" width="180" height="60" rx="8"/>
+          <text class="t" x="880" y="326" text-anchor="middle">MCP server</text>
+          <text class="s" x="880" y="345" text-anchor="middle">stdio · mcp_server/</text>
+          <line class="edge" x1="730" y1="330" x2="788" y2="330" marker-end="url(#a1)"/>
+          <text class="lbl" x="760" y="322" text-anchor="middle">tools</text>
+
+          <rect class="ext" x="770" y="430" width="120" height="50" rx="8"/>
+          <text class="t" x="830" y="452" text-anchor="middle">Google Calendar</text>
+          <text class="s" x="830" y="469" text-anchor="middle">appointments</text>
+          <rect class="ext" x="900" y="430" width="120" height="50" rx="8"/>
+          <text class="t" x="960" y="452" text-anchor="middle">Google Sheets</text>
+          <text class="s" x="960" y="469" text-anchor="middle">visits·tickets</text>
+          <line class="edge" x1="830" y1="360" x2="830" y2="428" marker-end="url(#a1)"/>
+          <text class="lbl" x="838" y="400">events</text>
+          <line class="edge" x1="935" y1="360" x2="935" y2="428" marker-end="url(#a1)"/>
+          <text class="lbl" x="943" y="400">rows</text>
+
+          <!-- Internal API + audit -->
+          <rect class="box" x="220" y="440" width="140" height="60" rx="8"/>
+          <text class="t" x="290" y="466" text-anchor="middle">/internal/*</text>
+          <text class="s" x="290" y="485" text-anchor="middle">bearer token</text>
+          <rect class="box" x="420" y="440" width="130" height="60" rx="8"/>
+          <text class="t" x="485" y="466" text-anchor="middle">Audit log</text>
+          <text class="s" x="485" y="485" text-anchor="middle">redacted JSONL</text>
+          <line class="edge" x1="485" y1="360" x2="485" y2="438" marker-end="url(#a1)"/>
+          <text class="lbl" x="492" y="404">decision</text>
+
+          <!-- n8n + staff -->
+          <rect class="ext" x="220" y="580" width="300" height="60" rx="8"/>
+          <text class="t" x="370" y="606" text-anchor="middle">n8n</text>
+          <text class="s" x="370" y="625" text-anchor="middle">reminder · check-in · review · alerts</text>
+          <line class="edge" x1="290" y1="578" x2="290" y2="502" marker-start="url(#a1)" marker-end="url(#a1)"/>
+          <text class="lbl" x="298" y="548">due / send</text>
+          <path class="edge-fail" d="M410,362 V578" marker-end="url(#a1)" style="color:var(--danger)"/>
+          <text class="lbl" x="418" y="560">ticket alert</text>
+
+          <rect class="danger" x="600" y="580" width="160" height="60" rx="8"/>
+          <text class="t" x="680" y="606" text-anchor="middle">Clinic staff</text>
+          <text class="s" x="680" y="625" text-anchor="middle">email · ticket sheet</text>
+          <line class="edge" x1="520" y1="610" x2="598" y2="610" marker-end="url(#a1)"/>
+          <text class="lbl" x="560" y="603" text-anchor="middle">email</text>
+          <path class="edge" d="M760,610 H960 V482" marker-end="url(#a1)"/>
+          <text class="lbl" x="860" y="603" text-anchor="middle">reads tickets, replies</text>
+        </svg>
+      </div>
+      <figcaption>Claude only ever receives redacted text, so it never sees a patient's phone number. The model can reach booking tools only through the tool gateway, which drops any patient identity the model supplies and injects the verified sender instead. n8n never sees phone numbers or message text: it asks the app who is due and receives ticket IDs.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2. Message pipeline -->
+  <section>
+    <h2>What happens to one message</h2>
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 1040 480" role="img" aria-label="Message pipeline: each message is identified, checked by rules and the Claude classifier, and the strictest verdict picks one of six routes. Emergency, clinical, privacy, injection and STOP get fixed replies. Booking and logistics replies are written by Claude and must pass the output guard, or they become a staff ticket. Every decision is written to the audit log before the reply is sent.">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+
+          <!-- Top pipeline -->
+          <rect class="ext" x="20" y="30" width="150" height="60" rx="8"/>
+          <text class="t" x="95" y="56" text-anchor="middle">WhatsApp message</text>
+          <text class="s" x="95" y="75" text-anchor="middle">≤ 1000 chars</text>
+          <rect class="box" x="200" y="30" width="150" height="60" rx="8"/>
+          <text class="t" x="275" y="56" text-anchor="middle">Identify</text>
+          <text class="s" x="275" y="75" text-anchor="middle">phone → patient_ref</text>
+          <rect class="guard" x="380" y="30" width="150" height="60" rx="8"/>
+          <text class="t" x="455" y="56" text-anchor="middle">Rules</text>
+          <text class="s" x="455" y="75" text-anchor="middle">layer 1 · offline</text>
+          <rect class="guard" x="560" y="30" width="150" height="60" rx="8"/>
+          <text class="t" x="635" y="56" text-anchor="middle">Claude classifier</text>
+          <text class="s" x="635" y="75" text-anchor="middle">layer 2 · stricter</text>
+          <rect class="box" x="740" y="30" width="150" height="60" rx="8"/>
+          <text class="t" x="815" y="56" text-anchor="middle">Strictest wins</text>
+          <text class="s" x="815" y="75" text-anchor="middle">pick one route</text>
+          <line class="edge" x1="170" y1="60" x2="198" y2="60" marker-end="url(#a2)"/>
+          <line class="edge" x1="350" y1="60" x2="378" y2="60" marker-end="url(#a2)"/>
+          <line class="edge" x1="530" y1="60" x2="558" y2="60" marker-end="url(#a2)"/>
+          <line class="edge" x1="710" y1="60" x2="738" y2="60" marker-end="url(#a2)"/>
+          <text class="lbl" x="905" y="56">rate limit:</text>
+          <text class="lbl" x="905" y="72">20 msgs / 10 min</text>
+
+          <!-- Bus -->
+          <path class="edge" d="M815,90 V120"/>
+          <line class="edge" x1="95" y1="120" x2="945" y2="120"/>
+          <line class="edge" x1="95" y1="120" x2="95" y2="148" marker-end="url(#a2)"/>
+          <line class="edge" x1="265" y1="120" x2="265" y2="148" marker-end="url(#a2)"/>
+          <line class="edge" x1="435" y1="120" x2="435" y2="148" marker-end="url(#a2)"/>
+          <line class="edge" x1="605" y1="120" x2="605" y2="148" marker-end="url(#a2)"/>
+          <line class="edge" x1="775" y1="120" x2="775" y2="148" marker-end="url(#a2)"/>
+          <line class="edge" x1="945" y1="120" x2="945" y2="148" marker-end="url(#a2)"/>
+
+          <!-- Categories -->
+          <rect class="danger" x="20" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="95" y="175" text-anchor="middle">Emergency</text>
+          <rect class="danger" x="190" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="265" y="175" text-anchor="middle">Clinical · privacy</text>
+          <rect class="box" x="360" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="435" y="175" text-anchor="middle">Injection</text>
+          <rect class="box" x="530" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="605" y="175" text-anchor="middle">STOP</text>
+          <rect class="ok" x="700" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="775" y="175" text-anchor="middle">Booking</text>
+          <rect class="ok" x="870" y="150" width="150" height="40" rx="20"/>
+          <text class="t" x="945" y="175" text-anchor="middle">Logistics</text>
+
+          <line class="edge" x1="95" y1="190" x2="95" y2="228" marker-end="url(#a2)"/>
+          <line class="edge" x1="265" y1="190" x2="265" y2="228" marker-end="url(#a2)"/>
+          <line class="edge" x1="435" y1="190" x2="435" y2="228" marker-end="url(#a2)"/>
+          <line class="edge" x1="605" y1="190" x2="605" y2="228" marker-end="url(#a2)"/>
+          <line class="edge" x1="775" y1="190" x2="775" y2="228" marker-end="url(#a2)"/>
+          <line class="edge" x1="945" y1="190" x2="945" y2="228" marker-end="url(#a2)"/>
+
+          <!-- Actions -->
+          <rect class="box" x="20" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="95" y="256" text-anchor="middle">112 / 108 reply</text>
+          <text class="s" x="95" y="275" text-anchor="middle">urgent ticket</text>
+          <rect class="box" x="190" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="265" y="256" text-anchor="middle">Fixed reply</text>
+          <text class="s" x="265" y="275" text-anchor="middle">staff ticket</text>
+          <rect class="box" x="360" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="435" y="256" text-anchor="middle">Polite refusal</text>
+          <text class="s" x="435" y="275" text-anchor="middle">logistics only</text>
+          <rect class="box" x="530" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="605" y="256" text-anchor="middle">Opt out</text>
+          <text class="s" x="605" y="275" text-anchor="middle">follow-ups off</text>
+          <rect class="box" x="700" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="775" y="256" text-anchor="middle">Claude tool loop</text>
+          <text class="s" x="775" y="275" text-anchor="middle">MCP · ≤ 6 steps</text>
+          <rect class="box" x="870" y="230" width="150" height="60" rx="8"/>
+          <text class="t" x="945" y="256" text-anchor="middle">RAG + Claude</text>
+          <text class="s" x="945" y="275" text-anchor="middle">grounded answer</text>
+
+          <!-- Output guard -->
+          <line class="edge" x1="775" y1="290" x2="775" y2="318" marker-end="url(#a2)"/>
+          <line class="edge" x1="945" y1="290" x2="945" y2="318" marker-end="url(#a2)"/>
+          <rect class="guard" x="700" y="320" width="320" height="50" rx="8"/>
+          <text class="t" x="860" y="341" text-anchor="middle">Output guard (layer 3)</text>
+          <text class="s" x="860" y="358" text-anchor="middle">blocks doses · advice · PII</text>
+          <path class="edge-fail" d="M698,345 H265 V292" marker-end="url(#a2)" style="color:var(--danger)"/>
+          <text class="lbl" x="480" y="338" text-anchor="middle">blocked → becomes a staff ticket</text>
+
+          <!-- Converge -->
+          <line class="edge" x1="95" y1="290" x2="95" y2="408" marker-end="url(#a2)"/>
+          <line class="edge" x1="265" y1="292" x2="265" y2="408" marker-end="url(#a2)"/>
+          <line class="edge" x1="435" y1="290" x2="435" y2="408" marker-end="url(#a2)"/>
+          <line class="edge" x1="605" y1="290" x2="605" y2="408" marker-end="url(#a2)"/>
+          <line class="edge" x1="860" y1="370" x2="860" y2="408" marker-end="url(#a2)"/>
+          <text class="lbl" x="868" y="393">pass</text>
+          <rect class="box" x="20" y="410" width="1000" height="50" rx="8"/>
+          <text class="t" x="520" y="440" text-anchor="middle">Write audit log (redacted)  →  reply on WhatsApp</text>
+        </svg>
+      </div>
+      <figcaption>The red routes never involve Claude writing the reply: emergency, clinical and privacy messages get fixed wording and a ticket. Only booking and logistics replies are model-written, and each one has to pass the output guard. The classifier can move a message toward the red side but never away from it.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><strong>Identify.</strong> The phone number becomes a keyed hash (<code>patient_ref</code>). Rate limit and length cap apply.</li>
+      <li><strong>Rules.</strong> Patterns catch emergencies, medicines (including brands and misspellings), doses, symptoms with advice-seeking, result questions, other people's records and prompt injection.</li>
+      <li><strong>Classifier.</strong> Claude labels the redacted text. The stricter of the two verdicts wins. A refusal counts as clinical, and an API error keeps the rules verdict.</li>
+      <li><strong>Route.</strong> One of six outcomes. Emergencies caught by the rules skip the classifier, so the 112 / 108 reply goes out with no model call.</li>
+      <li><strong>Output guard.</strong> Model-written replies are blocked if they contain a dose, a medicine name, reassurance or PII that isn't in the clinic's own documents.</li>
+      <li><strong>Audit and reply.</strong> The decision and its reasons are logged with personal details removed, then the reply is sent.</li>
+    </ol>
+  </section>
+
+  <!-- 3. Follow-ups -->
+  <section>
+    <h2>Follow-up timeline</h2>
+    <figure>
+      <div class="canvas">
+        <svg viewBox="0 0 1000 200" role="img" aria-label="Follow-up timeline: booking, a reminder the day before at 18:00, the visit logged as completed, a check-in 18 to 36 hours later at 11:00, and a review request 60 to 96 hours later at 17:00 that is skipped if a ticket is open.">
+          <line class="axis" x1="40" y1="100" x2="960" y2="100"/>
+          <circle class="dot" cx="90" cy="100" r="7"/>
+          <circle class="dot" cx="290" cy="100" r="7"/>
+          <circle class="dot" cx="490" cy="100" r="7"/>
+          <circle class="dot" cx="690" cy="100" r="7"/>
+          <circle class="dot" cx="890" cy="100" r="7"/>
+
+          <text class="t" x="90" y="56" text-anchor="middle">Booked</text>
+          <text class="s" x="90" y="74" text-anchor="middle">WhatsApp + MCP</text>
+          <text class="t" x="290" y="56" text-anchor="middle">Reminder</text>
+          <text class="s" x="290" y="74" text-anchor="middle">day before · 18:00</text>
+          <text class="t" x="490" y="56" text-anchor="middle">Visit</text>
+          <text class="s" x="490" y="74" text-anchor="middle">marked completed</text>
+          <text class="t" x="690" y="56" text-anchor="middle">Check-in</text>
+          <text class="s" x="690" y="74" text-anchor="middle">+18–36 h · 11:00</text>
+          <text class="t" x="890" y="56" text-anchor="middle">Review request</text>
+          <text class="s" x="890" y="74" text-anchor="middle">+60–96 h · 17:00</text>
+
+          <text class="lbl" x="90" y="134" text-anchor="middle">patient</text>
+          <text class="lbl" x="290" y="134" text-anchor="middle">n8n → template</text>
+          <text class="lbl" x="490" y="134" text-anchor="middle">front desk / CRM</text>
+          <text class="lbl" x="690" y="134" text-anchor="middle">n8n → template</text>
+          <text class="lbl" x="890" y="134" text-anchor="middle">n8n → template</text>
+          <text class="s" x="290" y="156" text-anchor="middle">skip if opted out</text>
+          <text class="s" x="490" y="156" text-anchor="middle">POST /internal/visits</text>
+          <text class="s" x="690" y="156" text-anchor="middle">reply → guardrails</text>
+          <text class="s" x="890" y="156" text-anchor="middle">skip if ticket open</text>
+        </svg>
+      </div>
+      <figcaption>n8n only decides when to run. The app decides who is due, so opt-outs, duplicates and open clinical tickets are checked in one tested place. A worried reply to the check-in goes through the same guardrails as any other message, opens a ticket, and stops the review request.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 4. Data visibility -->
+  <section>
+    <h2>Who can see patient data</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Component</th><th>Phone number</th><th>Name</th><th>Message text</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>Claude API</td><td class="no">No</td><td class="part">Only if given for a booking</td><td class="part">Redacted</td><td>Phone, email, Aadhaar, PAN and DOB are replaced before every call</td></tr>
+          <tr><td>Audit log</td><td class="no">No</td><td class="no">No</td><td class="part">Redacted</td><td>Keyed by <code>patient_ref</code>, append-only</td></tr>
+          <tr><td>Google Calendar</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td>Event title is the doctor plus a 6-character ref</td></tr>
+          <tr><td>n8n</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td>Receives appointment and ticket IDs only</td></tr>
+          <tr><td>MCP server</td><td class="part">Via store</td><td class="part">Via store</td><td class="no">No</td><td>Started with storage settings only; never calls Claude or WhatsApp</td></tr>
+          <tr><td>Google Sheets</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="part">Redacted tickets</td><td>Restricted to front-desk staff</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. Components -->
+  <section>
+    <h2>Where each part lives</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Part</th><th>Path</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td>Web service</td><td class="path">app/main.py</td><td>WhatsApp webhook, n8n endpoints, staff alerts</td></tr>
+          <tr><td>Agent</td><td class="path">app/agent.py</td><td>Runs the pipeline above for each message</td></tr>
+          <tr><td>Guardrails</td><td class="path">app/guardrails/</td><td>Categories, fixed replies, rules, output guard</td></tr>
+          <tr><td>Claude calls</td><td class="path">app/llm.py</td><td>Classifier, grounded answers, booking tool loop; all fail closed</td></tr>
+          <tr><td>Retrieval</td><td class="path">app/rag/</td><td>BM25 over <code>knowledge/*.md</code> and doctor schedules</td></tr>
+          <tr><td>Tool gateway</td><td class="path">app/tool_gateway.py</td><td>Tool allowlist and identity injection</td></tr>
+          <tr><td>MCP server</td><td class="path">mcp_server/</td><td>Booking and visit-logging tools</td></tr>
+          <tr><td>Store</td><td class="path">clinic_store/</td><td>Slot rules, ownership checks, Google or local backend</td></tr>
+          <tr><td>Follow-ups</td><td class="path">app/followups.py · n8n/</td><td>Who is due, and when each workflow runs</td></tr>
+          <tr><td>Eval</td><td class="path">evals/ · scripts/</td><td>20 tricky questions plus obfuscation and control cases</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

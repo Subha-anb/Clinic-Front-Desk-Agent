@@ -1,0 +1,19 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-08T12:00:00Z"},
+  "lists": "css",
+  "title": "Clinic Front Desk Agent — Leadership Briefing",
+  "order": ["cover", "problem", "solution", "rule", "guardrails", "results", "security", "stack", "architecture", "next"],
+  "sections": {
+    "s1": {"description": "Why: small clinics lose patients at the front desk", "start": "cover"},
+    "s2": {"description": "What the agent does and how it stays safe", "start": "solution"},
+    "s3": {"description": "Proof: test results and data protection", "start": "results"},
+    "s4": {"description": "How it is built: tools, technologies and architecture", "start": "stack"},
+    "s5": {"description": "Status and next steps", "start": "next"}
+  },
+  "faces": {
+    "source-serif-4": {"family": "Source Serif 4", "href": "https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400..700&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"}
+  },
+  "designSystems": []
+}

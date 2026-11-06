@@ -1,0 +1,40 @@
+<section id="architecture" data-transition="fade" style="background:#F5F7F4;color:#10262B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#0F6E6B">Architecture</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1.15;color:#10262B">How the pieces fit together</h2>
+<x-connector x1="488" y1="440" x2="562" y2="440" head="end" style="color:#5B7075"></x-connector>
+<x-connector x1="922" y1="440" x2="996" y2="440" head="end" style="color:#5B7075"></x-connector>
+<x-connector x1="1356" y1="440" x2="1430" y2="440" head="end" style="color:#5B7075"></x-connector>
+<x-connector x1="742" y1="550" x2="742" y2="680" head="end" style="color:#5B7075"></x-connector>
+<x-connector x1="488" y1="770" x2="640" y2="550" route="hv" head="end" style="color:#5B7075"></x-connector>
+<x-connector x1="900" y1="550" x2="996" y2="770" route="vh" head="end" style="color:#C2571F;border-style:dashed"></x-connector>
+<div style="position:absolute;left:128px;top:330px;width:360px;height:220px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:1px solid #C9D6D4;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">Patient on WhatsApp</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Asks questions, books visits</p>
+</div>
+<div style="position:absolute;left:562px;top:330px;width:360px;height:220px;display:flex;flex-direction:column;gap:8px;background:#E3F1EF;padding:28px;border:3px solid #0F6E6B;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">Front-desk service</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Guardrails and knowledge base</p>
+</div>
+<div style="position:absolute;left:996px;top:330px;width:360px;height:220px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:1px solid #C9D6D4;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">MCP server</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Booking tools, patient identity checked</p>
+</div>
+<div style="position:absolute;left:1430px;top:330px;width:360px;height:220px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:1px solid #C9D6D4;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">Google Calendar and Sheets</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Appointments, visits, tickets</p>
+</div>
+<div style="position:absolute;left:128px;top:680px;width:360px;height:180px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:1px solid #C9D6D4;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">n8n</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Reminders, check-ins, reviews</p>
+</div>
+<div style="position:absolute;left:562px;top:680px;width:360px;height:180px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:1px solid #C9D6D4;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">Claude API</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Sees redacted text only</p>
+</div>
+<div style="position:absolute;left:996px;top:680px;width:360px;height:180px;display:flex;flex-direction:column;gap:8px;background:#FCFDFB;padding:28px;border:2px solid #C2571F;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#10262B">Clinic staff</h3>
+<p style="font-size:24px;line-height:1.35;color:#44575C">Tickets for clinical questions</p>
+</div>
+<p style="position:absolute;left:1430px;top:700px;width:362px;font-size:24px;line-height:1.4;color:#44575C">The orange dashed line is the escalation path: clinical questions become staff tickets.</p>
+<aside>Patients talk to one front-desk service. It checks every message, answers from clinic documents, and books through the MCP server into Google Calendar and Sheets. Claude only ever sees redacted text. n8n triggers the follow-ups, and clinical questions go to staff as tickets.</aside>
+</section>
